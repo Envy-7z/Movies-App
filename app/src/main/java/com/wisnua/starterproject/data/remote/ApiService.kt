@@ -1,18 +1,16 @@
 package com.wisnua.starterproject.data.remote
 
-import com.wisnua.starterproject.domain.model.NewsResponse
+import com.wisnua.starterproject.domain.model.MovieResponse
+import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Query
 
 interface ApiService {
 
-    @GET("top-headlines")
-    suspend fun getTopNews(
+    @GET("/")
+    suspend fun searchMovies(
+        @Query("s") searchQuery: String,
         @Query("page") page: Int,
-        @Query("pageSize") pageSize: Int,
-        @Query("country") country: String? = "id",
-        @Query("sources") source: String? = null,
-        @Query("category") category: String? = null,
-        @Query("apiKey") apikey : String? = "2ed1fd4648494040b64ff6585d0f0392"
-    ): NewsResponse
+    ): Response<MovieResponse>
+
 }

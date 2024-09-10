@@ -16,14 +16,14 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:fontFamily="serif"
-            android:text="@string/top_news"
+            android:text="@string/movie"
             android:textSize="18sp"
             android:textStyle="bold"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
         <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rv_all_news"
+            android:id="@+id/rv_all_movies"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:clipToPadding="true"
@@ -34,7 +34,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tv_page_title"
             tools:itemCount="10"
-            tools:listitem="@layout/content_news"
+            tools:listitem="@layout/content_movie"
             tools:visibility="visible" />
 
         <androidx.appcompat.widget.AppCompatTextView

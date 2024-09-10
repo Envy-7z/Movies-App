@@ -9,9 +9,9 @@ import androidx.paging.LoadState
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.wisnua.starterproject.databinding.ActivityMainBinding
-import com.wisnua.starterproject.presentation.adapter.NewsAdapter
-import com.wisnua.starterproject.presentation.viewModel.NewsViewModel
-import com.wisnua.starterproject.utils.NewsLoadStateAdapter
+import com.wisnua.starterproject.presentation.adapter.MovieAdapter
+import com.wisnua.starterproject.presentation.viewModel.MovieViewModel
+import com.wisnua.starterproject.utils.MovieLoadStateAdapter
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -20,8 +20,8 @@ import kotlinx.coroutines.launch
 class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
 
     private lateinit var binding: ActivityMainBinding
-    private val viewModel: NewsViewModel by viewModels()
-    private lateinit var adapter: NewsAdapter
+    private val viewModel: MovieViewModel by viewModels()
+    private lateinit var adapter: MovieAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,7 +30,6 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
 
         setupRecyclerView()
         observeViewModel()
-
         binding.swipeRefresh.setOnRefreshListener(this)
     }
 
@@ -39,17 +38,18 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
     }
 
     private fun setupRecyclerView() {
-        adapter = NewsAdapter()
-        binding.rvAllNews.adapter = adapter.withLoadStateFooter(NewsLoadStateAdapter { adapter.retry() })
-        binding.rvAllNews.layoutManager = LinearLayoutManager(this)
+        adapter = MovieAdapter()
+        binding.rvAllMovies.layoutManager = LinearLayoutManager(this)
+        binding.rvAllMovies.adapter = adapter.withLoadStateFooter(MovieLoadStateAdapter { adapter.retry() })
     }
 
     private fun observeViewModel() {
         lifecycleScope.launch {
-            viewModel.articles.collectLatest { pagingData ->
+            viewModel.getMovies("Batman").collectLatest { pagingData ->
                 adapter.submitData(pagingData)
             }
         }
+
         adapter.addLoadStateListener { loadState ->
             val isLoading = loadState.source.refresh is LoadState.Loading
             val isError = loadState.source.refresh is LoadState.Error
@@ -57,8 +57,7 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
 
             binding.swipeRefresh.isRefreshing = isLoading
             binding.tvLoadState.isVisible = isError || isEmpty
-            binding.rvAllNews.isVisible = !isError && !isEmpty
+            binding.rvAllMovies.isVisible = !isError && !isEmpty
         }
     }
 }
-

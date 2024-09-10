@@ -8,8 +8,8 @@ import androidx.paging.LoadStateAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.wisnua.starterproject.databinding.ItemLoadStateBinding
 
-class NewsLoadStateAdapter(private val retry: () -> Unit) :
-    LoadStateAdapter<NewsLoadStateAdapter.LoadStateViewHolder>() {
+class MovieLoadStateAdapter(private val retry: () -> Unit) :
+    LoadStateAdapter<MovieLoadStateAdapter.LoadStateViewHolder>() {
 
     inner class LoadStateViewHolder(private val binding: ItemLoadStateBinding) :
         RecyclerView.ViewHolder(binding.root) {

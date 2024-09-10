@@ -1,4 +1,3 @@
-// File: MyApp.kt
 package com.wisnua.starterproject
 
 import android.app.Application

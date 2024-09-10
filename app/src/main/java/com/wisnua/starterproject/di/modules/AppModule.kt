@@ -1,11 +1,17 @@
 package com.wisnua.starterproject.di.modules
 
+import android.content.Context
+import androidx.room.Room
+import com.wisnua.starterproject.data.local.MovieCache
+import com.wisnua.starterproject.data.local.MovieDatabase
+import com.wisnua.starterproject.data.local.dao.MovieDao
 import com.wisnua.starterproject.data.remote.ApiService
-import com.wisnua.starterproject.data.repository.NewsRepositoryImpl
-import com.wisnua.starterproject.domain.repository.NewsRepository
+import com.wisnua.starterproject.data.repository.MovieRepositoryImpl
+import com.wisnua.starterproject.domain.repository.MovieRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
@@ -18,10 +24,12 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object AppModule {
 
-    private const val BASE_URL = "https://newsapi.org/v2/"
-    private const val API_KEY = "2ed1fd4648494040b64ff6585d0f0392"
+    private const val BASE_URL = "https://www.omdbapi.com/"
+    private const val API_KEY = "6038cc6a"
+    private const val DATABASE_NAME = "movie_database"
 
     @Provides
+    @Singleton
     fun provideOkHttpClient(): OkHttpClient {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
@@ -32,7 +40,7 @@ object AppModule {
             val originalHttpUrl = originalRequest.url
 
             val url = originalHttpUrl.newBuilder()
-                .addQueryParameter("apiKey", API_KEY)
+                .addQueryParameter("apikey", API_KEY)
                 .build()
 
             val requestBuilder = originalRequest.newBuilder()
@@ -45,11 +53,11 @@ object AppModule {
         return OkHttpClient.Builder()
             .addInterceptor(loggingInterceptor)
             .addInterceptor(apiKeyInterceptor)
-            // Add any other interceptors or configurations as needed
             .build()
     }
 
     @Provides
+    @Singleton
     fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
         return Retrofit.Builder()
             .baseUrl(BASE_URL)
@@ -59,13 +67,36 @@ object AppModule {
     }
 
     @Provides
+    @Singleton
     fun provideApiService(retrofit: Retrofit): ApiService {
         return retrofit.create(ApiService::class.java)
     }
 
     @Provides
     @Singleton
-    fun provideNewsRepository(apiService: ApiService): NewsRepository {
-        return NewsRepositoryImpl(apiService)
+    fun provideMovieDatabase(@ApplicationContext context: Context): MovieDatabase {
+        return Room.databaseBuilder(
+            context,
+            MovieDatabase::class.java,
+            DATABASE_NAME
+        ).fallbackToDestructiveMigration() // Optional: Use this if you want Room to discard old data on schema changes
+            .build()
+    }
+
+    @Provides
+    fun provideMovieDao(movieDatabase: MovieDatabase): MovieDao {
+        return movieDatabase.movieDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideMovieCache(movieDao: MovieDao): MovieCache {
+        return MovieCache(movieDao)
+    }
+
+    @Provides
+    @Singleton
+    fun provideMovieRepository(apiService: ApiService, movieCache: MovieCache): MovieRepository {
+        return MovieRepositoryImpl(apiService, movieCache)
     }
 }
