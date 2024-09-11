@@ -56,6 +56,8 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
 
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1")
+
     // Hilt
     implementation("com.google.dagger:hilt-android:2.49")
     implementation("androidx.navigation:navigation-compose:2.7.7")
@@ -81,5 +83,9 @@ dependencies {
     kapt("androidx.room:room-compiler:$room_version")
     implementation("androidx.room:room-ktx:$room_version")
     implementation("androidx.room:room-paging:$room_version")
+
+    //shimmer
+    implementation("com.facebook.shimmer:shimmer:0.5.0")
+
 
 }

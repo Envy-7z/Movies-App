@@ -49,7 +49,7 @@ class MovieAdapter : PagingDataAdapter<Search, MovieAdapter.MovieViewHolder>(Mov
 
     class MovieDiffCallback : DiffUtil.ItemCallback<Search>() {
         override fun areItemsTheSame(oldItem: Search, newItem: Search): Boolean {
-            return oldItem == newItem
+            return oldItem.imdbID == newItem.imdbID
         }
 
         override fun areContentsTheSame(oldItem: Search, newItem: Search): Boolean {
