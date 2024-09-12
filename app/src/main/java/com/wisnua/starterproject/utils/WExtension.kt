@@ -1,5 +1,9 @@
 package com.wisnua.starterproject.utils
 
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.os.Build
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.MotionEvent
@@ -71,4 +75,21 @@ fun View.goInvisible() {
 fun View.goGone() {
     if (visibility != View.GONE)
         visibility = View.GONE
+}
+
+fun isNetworkAvailable(context: Context): Boolean {
+    val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
+    val isConnected = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        val network = connectivityManager.activeNetwork
+        val activeNetwork = connectivityManager.getNetworkCapabilities(network)
+        activeNetwork != null && (activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+                || activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
+                || activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET))
+    } else {
+        val activeNetworkInfo = connectivityManager.activeNetworkInfo
+        activeNetworkInfo != null && activeNetworkInfo.isConnectedOrConnecting
+    }
+
+    return isConnected
 }

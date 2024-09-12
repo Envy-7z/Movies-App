@@ -9,6 +9,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import androidx.paging.LoadState
+import androidx.paging.PagingData
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.wisnua.starterproject.databinding.ActivityMainBinding
@@ -17,6 +18,7 @@ import com.wisnua.starterproject.presentation.viewModel.MovieViewModel
 import com.wisnua.starterproject.utils.MovieLoadStateAdapter
 import com.wisnua.starterproject.utils.goGone
 import com.wisnua.starterproject.utils.goVisible
+import com.wisnua.starterproject.utils.isNetworkAvailable
 import com.wisnua.starterproject.utils.onClickIconRightEditText
 import com.wisnua.starterproject.utils.onSearch
 import com.wisnua.starterproject.utils.setupDrawableRightEditText
@@ -45,17 +47,29 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
         observeLocalMovies() // Observe local data when the app starts
         binding.swipeRefresh.setOnRefreshListener(this)
         setupEtSearch()
+        if (isNetworkAvailable(this@MainActivity)){
+            fetchDefaultMovies() // Start with default search
+        }
     }
-
     override fun onRefresh() {
-        // Refresh the data
-        if (isSearching) {
-            doSearch()
-        } else {
-            adapter.refresh()
-            binding.shimmerContainer.startShimmer()
-            binding.shimmerContainer.goVisible()
-            binding.rvAllMovies.goGone()
+        lifecycleScope.launch {
+            if (isNetworkAvailable(this@MainActivity)) {
+                // If there is internet, refresh from the API
+                viewModel.refreshMovies().collectLatest { pagingData ->
+                    adapter.submitData(pagingData)
+                }
+            } else {
+                // If there is no internet, check if there is local data
+                if (adapter.itemCount == 0) {
+                    showOfflineMessage()
+                } else {
+                    // Show local data if available
+                    viewModel.getLocalMovies().collectLatest { pagingData ->
+                        adapter.submitData(pagingData)
+                    }
+                }
+            }
+            binding.swipeRefresh.isRefreshing = false
         }
     }
 
@@ -68,18 +82,13 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
     private fun observeLocalMovies() {
         lifecycleScope.launch {
             viewModel.getLocalMovies().collectLatest { pagingData ->
-                // Only update adapter if not searching
-                if (!isSearching) {
+                // If there is no active search and local data is available, display local data
+                if (!isSearching && adapter.itemCount == 0) {
                     adapter.submitData(pagingData)
+                    binding.tvLoadState.goGone() // Hide the offline message if local data is present
                 }
 
                 Log.d("MainActivity", "Local movies data received: $pagingData")
-
-                // If no local data and not searching, fetch default movies
-                if (adapter.itemCount == 0 && !isSearching) {
-                    Log.d("MainActivity", "No local data found, fetching default movies")
-                    fetchDefaultMovies()
-                }
             }
         }
 
@@ -122,7 +131,6 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
     }
 
     private fun fetchDefaultMovies() {
-        searchText = ""
         doSearch()
     }
 
@@ -181,10 +189,22 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
             binding.shimmerContainer.goVisible()
             binding.rvAllMovies.goGone()
 
-            viewModel.getMovies(searchText.ifEmpty { "defaultSearchTerm" }).collectLatest { pagingData ->
+            adapter.submitData(PagingData.empty())
+
+
+            viewModel.getMovies(searchText.ifEmpty { "batman" }).collectLatest { pagingData ->
                 Log.d("MainActivity", "New paging data received: $pagingData")
                 adapter.submitData(pagingData)
             }
         }
     }
+
+    private fun showOfflineMessage() {
+        binding.tvLoadState.goVisible()
+        binding.tvLoadState.text = getString(R.string.error_no_internet)
+        binding.rvAllMovies.goGone()
+        binding.shimmerContainer.goGone()
+        binding.swipeRefresh.isRefreshing = false
+    }
+
 }
