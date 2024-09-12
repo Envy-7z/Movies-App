@@ -15,7 +15,14 @@ class MovieViewModel @Inject constructor(
     private val movieRepository: MovieRepository
 ) : ViewModel() {
 
-    fun getMovies(query: String): Flow<PagingData<Search>> {
-        return movieRepository.getMovies(query).cachedIn(viewModelScope)
+    private val defaultSearchTerm = "batman"
+
+    fun getMovies(query: String? = null): Flow<PagingData<Search>> {
+        val searchQuery = query ?: defaultSearchTerm
+        return movieRepository.getMovies(searchQuery).cachedIn(viewModelScope)
+    }
+
+    fun getLocalMovies(): Flow<PagingData<Search>> {
+        return movieRepository.getCachedMovies().cachedIn(viewModelScope)
     }
 }

@@ -10,15 +10,15 @@ import com.wisnua.starterproject.data.local.entity.MovieEntity
 @Dao
 interface MovieDao {
 
+    @Query("SELECT * FROM movies WHERE title LIKE '%' || :query || '%'")
+    fun searchMovies(query: String): PagingSource<Int, MovieEntity>
+
+    @Query("SELECT * FROM movies")
+    fun getAllMovies(): PagingSource<Int, MovieEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMovies(movies: List<MovieEntity>)
 
-    @Query("SELECT * FROM movies WHERE title LIKE :query")
-    fun searchMovies(query: String): PagingSource<Int, MovieEntity>
-
-    @Query("DELETE FROM movies WHERE title LIKE :query")
+    @Query("DELETE FROM movies WHERE title LIKE '%' || :query || '%'")
     suspend fun deleteMoviesByQuery(query: String)
-
-    @Query("DELETE FROM movies")
-    suspend fun clearMovies()
 }

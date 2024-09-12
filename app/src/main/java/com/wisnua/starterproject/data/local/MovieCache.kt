@@ -6,13 +6,7 @@ import com.wisnua.starterproject.domain.model.MovieResponse
 
 class MovieCache(private val movieDao: MovieDao) {
 
-    /**
-     * Save movies to the cache.
-     * @param query The query used for fetching the movies.
-     * @param movies The movie response containing the movies to cache.
-     */
     suspend fun saveMovies(query: String, movies: MovieResponse) {
-        // Convert from MovieResponse to MovieEntity
         val movieEntities = movies.search?.map {
             MovieEntity(
                 imdbID = it?.imdbID ?: "",
@@ -23,15 +17,13 @@ class MovieCache(private val movieDao: MovieDao) {
             )
         } ?: emptyList()
 
-        // Delete old cache for the given query and insert new data
         movieDao.deleteMoviesByQuery(query)
         movieDao.insertMovies(movieEntities)
     }
 
-    /**
-     * Get cached movies based on the query.
-     * @param query The query used for fetching the cached movies.
-     * @return A PagingSource that provides the cached movies.
-     */
+    // get data cache
     fun getMoviesPagingSource(query: String) = movieDao.searchMovies(query)
+
+    // get all movies from cache
+    fun getAllMoviesPagingSource() = movieDao.getAllMovies()
 }

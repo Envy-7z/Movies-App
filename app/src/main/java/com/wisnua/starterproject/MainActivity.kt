@@ -2,6 +2,7 @@ package com.wisnua.starterproject
 
 import android.content.Context
 import android.os.Bundle
+import android.util.Log
 import android.view.inputmethod.InputMethodManager
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -21,7 +22,6 @@ import com.wisnua.starterproject.utils.onSearch
 import com.wisnua.starterproject.utils.setupDrawableRightEditText
 import com.wisnua.starterproject.utils.textChanges
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
@@ -34,6 +34,7 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
     private lateinit var adapter: MovieAdapter
 
     private var searchText = ""
+    private var isSearching = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,17 +42,21 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
         setContentView(binding.root)
 
         setupRecyclerView()
-        observeViewModel()
+        observeLocalMovies() // Observe local data when the app starts
         binding.swipeRefresh.setOnRefreshListener(this)
         setupEtSearch()
     }
 
     override fun onRefresh() {
         // Refresh the data
-        adapter.refresh()
-        binding.shimmerContainer.startShimmer()
-        binding.shimmerContainer.goVisible()
-        binding.rvAllMovies.goGone()
+        if (isSearching) {
+            doSearch()
+        } else {
+            adapter.refresh()
+            binding.shimmerContainer.startShimmer()
+            binding.shimmerContainer.goVisible()
+            binding.rvAllMovies.goGone()
+        }
     }
 
     private fun setupRecyclerView() {
@@ -60,15 +65,24 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
         binding.rvAllMovies.adapter = adapter.withLoadStateFooter(MovieLoadStateAdapter { adapter.retry() })
     }
 
-    private fun observeViewModel() {
-        // Launch a coroutine to observe data from the ViewModel
+    private fun observeLocalMovies() {
         lifecycleScope.launch {
-            viewModel.getMovies(searchText).collectLatest { pagingData ->
-                adapter.submitData(pagingData)
+            viewModel.getLocalMovies().collectLatest { pagingData ->
+                // Only update adapter if not searching
+                if (!isSearching) {
+                    adapter.submitData(pagingData)
+                }
+
+                Log.d("MainActivity", "Local movies data received: $pagingData")
+
+                // If no local data and not searching, fetch default movies
+                if (adapter.itemCount == 0 && !isSearching) {
+                    Log.d("MainActivity", "No local data found, fetching default movies")
+                    fetchDefaultMovies()
+                }
             }
         }
 
-        // Add LoadStateListener to observe loading states
         adapter.addLoadStateListener { loadState ->
             val isLoading = loadState.source.refresh is LoadState.Loading
             val isNotLoading = loadState.source.refresh is LoadState.NotLoading
@@ -85,7 +99,6 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
                     binding.shimmerContainer.goGone()
                     binding.rvAllMovies.goVisible()
                     binding.swipeRefresh.isRefreshing = false
-
                 }
             }
 
@@ -95,7 +108,6 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
                 binding.tvLoadState.text = getString(R.string.label_empty_data)
                 binding.rvAllMovies.goGone()
                 binding.swipeRefresh.isRefreshing = false
-
             } else {
                 binding.tvLoadState.isVisible = false
             }
@@ -109,6 +121,11 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
         }
     }
 
+    private fun fetchDefaultMovies() {
+        searchText = ""
+        doSearch()
+    }
+
     private fun setupEtSearch() {
         binding.etSearch.clearFocus()
 
@@ -118,9 +135,8 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
                 .collectLatest { query ->
                     searchText = query?.toString() ?: ""
                     changeIconEtSearch() // Update search icon
-                    if (searchText.isNotEmpty()) {
-                        doSearch() // Trigger search
-                    }
+                    isSearching = searchText.isNotEmpty() // Set searching mode
+                    doSearch() // Trigger search
                 }
         }
 
@@ -128,6 +144,7 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
         binding.etSearch.onSearch {
             hideKeyboard()
             searchText = binding.etSearch.text.toString().ifEmpty { "" }
+            isSearching = searchText.isNotEmpty() // Set searching mode
             doSearch() // Trigger search on enter
         }
 
@@ -136,6 +153,7 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
             if (searchText.isNotEmpty()) {
                 searchText = ""
                 binding.etSearch.setText("") // Clear text
+                isSearching = false // Reset searching mode
                 doSearch() // Clear search results
             }
         }
@@ -163,10 +181,10 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
             binding.shimmerContainer.goVisible()
             binding.rvAllMovies.goGone()
 
-            viewModel.getMovies(searchText).collectLatest { pagingData ->
+            viewModel.getMovies(searchText.ifEmpty { "defaultSearchTerm" }).collectLatest { pagingData ->
+                Log.d("MainActivity", "New paging data received: $pagingData")
                 adapter.submitData(pagingData)
             }
         }
     }
-
 }

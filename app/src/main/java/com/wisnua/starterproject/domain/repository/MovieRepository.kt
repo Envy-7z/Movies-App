@@ -6,4 +6,6 @@ import kotlinx.coroutines.flow.Flow
 
 interface MovieRepository {
     fun getMovies(query: String): Flow<PagingData<Search>>
+    fun getCachedMovies(): Flow<PagingData<Search>>
 }
+
