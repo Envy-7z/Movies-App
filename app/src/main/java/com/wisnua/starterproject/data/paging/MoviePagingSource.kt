@@ -1,4 +1,4 @@
-package com.wisnua.starterproject.utils
+package com.wisnua.starterproject.data.paging
 
 import androidx.paging.PagingSource
 import androidx.paging.PagingState

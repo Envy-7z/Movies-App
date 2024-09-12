@@ -15,7 +15,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.wisnua.starterproject.databinding.ActivityMainBinding
 import com.wisnua.starterproject.presentation.adapter.MovieAdapter
 import com.wisnua.starterproject.presentation.viewModel.MovieViewModel
-import com.wisnua.starterproject.utils.MovieLoadStateAdapter
+import com.wisnua.starterproject.data.paging.MovieLoadStateAdapter
 import com.wisnua.starterproject.utils.goGone
 import com.wisnua.starterproject.utils.goVisible
 import com.wisnua.starterproject.utils.isNetworkAvailable

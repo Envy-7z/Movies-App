@@ -2,6 +2,7 @@ package com.wisnua.starterproject.domain.model
 import com.google.gson.annotations.Expose
 
 import android.os.Parcelable
+import androidx.recyclerview.widget.DiffUtil
 
 import kotlinx.parcelize.Parcelize
 
@@ -38,4 +39,16 @@ data class Search(
     @SerializedName("Year")
     @Expose
     var year: String? = null
-) : Parcelable
+) : Parcelable {
+    companion object {
+        val DIFF_CALLBACK = object : DiffUtil.ItemCallback<Search>() {
+            override fun areItemsTheSame(oldItem: Search, newItem: Search): Boolean {
+                return oldItem.imdbID == newItem.imdbID
+            }
+
+            override fun areContentsTheSame(oldItem: Search, newItem: Search): Boolean {
+                return oldItem == newItem
+            }
+        }
+    }
+}
