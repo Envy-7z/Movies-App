@@ -52,8 +52,8 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.11.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
-    implementation("androidx.paging:paging-runtime-ktx:3.3.2") // Use a matching version for runtime
-    implementation("androidx.paging:paging-common-ktx:3.3.2") // Use the same version for common-ktx
+    implementation("androidx.paging:paging-runtime-ktx:3.3.2")
+    implementation("androidx.paging:paging-common-ktx:3.3.2")
 
     // Unit Testing
     testImplementation("junit:junit:4.13.2")
@@ -67,7 +67,7 @@ dependencies {
     testImplementation("com.google.truth:truth:1.1.3")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:1.8.22")
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
-
+    testImplementation("androidx.paging:paging-common-ktx:3.2.2")
     // Android Testing
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test:runner:1.6.2")

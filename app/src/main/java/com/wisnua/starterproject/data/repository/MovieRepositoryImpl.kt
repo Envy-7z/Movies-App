@@ -5,11 +5,10 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.map
 import com.wisnua.starterproject.data.local.MovieCache
-import com.wisnua.starterproject.data.local.entity.MovieEntity
+import com.wisnua.starterproject.data.paging.MoviePagingSource
 import com.wisnua.starterproject.data.remote.ApiService
 import com.wisnua.starterproject.domain.model.Search
 import com.wisnua.starterproject.domain.repository.MovieRepository
-import com.wisnua.starterproject.data.paging.MoviePagingSource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject

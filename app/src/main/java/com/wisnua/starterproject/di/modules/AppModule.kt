@@ -79,7 +79,7 @@ object AppModule {
             context,
             MovieDatabase::class.java,
             DATABASE_NAME
-        ).fallbackToDestructiveMigration() // Optional: Use this if you want Room to discard old data on schema changes
+        ).fallbackToDestructiveMigration()
             .build()
     }
 

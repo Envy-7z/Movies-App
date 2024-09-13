@@ -8,7 +8,6 @@ import com.wisnua.starterproject.domain.model.MovieResponse
 import com.wisnua.starterproject.domain.repository.TestingRepository
 import kotlinx.coroutines.launch
 
-// MovieViewModel.kt
 class TestingViewModel(private val repository: TestingRepository) : ViewModel() {
 
     private val _movieResponse = MutableLiveData<MovieResponse>()
