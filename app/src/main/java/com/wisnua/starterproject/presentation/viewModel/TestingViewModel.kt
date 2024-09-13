@@ -1,6 +1,5 @@
 package com.wisnua.starterproject.presentation.viewModel
 
-import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -10,30 +9,31 @@ import kotlinx.coroutines.launch
 
 class TestingViewModel(private val repository: TestingRepository) : ViewModel() {
 
-    private val _movieResponse = MutableLiveData<MovieResponse>()
-    val movieResponse: LiveData<MovieResponse> get() = _movieResponse
+    val movieResponse = MutableLiveData<MovieResponse>()
+    val loading = MutableLiveData<Boolean>()
+    val error = MutableLiveData<String>()
 
-    private val _loading = MutableLiveData<Boolean>()
-    val loading: LiveData<Boolean> get() = _loading
-
-    private val _error = MutableLiveData<String>()
-    val error: LiveData<String> get() = _error
-
-    fun searchMovies(searchQuery: String, page: Int) {
+    fun searchMovies(query: String, page: Int) {
         viewModelScope.launch {
-            _loading.value = true
+            loading.value = true
             try {
-                val response = repository.searchMovies(searchQuery, page)
+                val response = repository.searchMovies(query, page)
                 if (response.isSuccessful) {
-                    _movieResponse.value = response.body()
+                    val body = response.body()
+                    if (body?.response == "True") {
+                        movieResponse.value = body
+                    } else {
+                        error.value = body?.error ?: "Unknown error"
+                    }
                 } else {
-                    _error.value = "Error: ${response.message()}"
+                    error.value = response.message()
                 }
             } catch (e: Exception) {
-                _error.value = "Exception: ${e.message}"
+                error.value = "Exception: ${e.message}"
             } finally {
-                _loading.value = false
+                loading.value = false
             }
         }
     }
 }
+
