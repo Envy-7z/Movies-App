@@ -1,108 +1,115 @@
 package com.wisnua.starterproject
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
-import androidx.lifecycle.Observer
-import com.wisnua.starterproject.domain.model.MovieResponse
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
 import com.wisnua.starterproject.domain.model.Search
-import com.wisnua.starterproject.domain.repository.TestingRepository
-import com.wisnua.starterproject.presentation.viewModel.TestingViewModel
-import kotlinx.coroutines.Dispatchers
+import com.wisnua.starterproject.domain.repository.MovieRepository
+import com.wisnua.starterproject.presentation.viewModel.MovieViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runBlockingTest
-import kotlinx.coroutines.test.setMain
-import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.mockito.Mockito
+import org.junit.rules.TestRule
+import org.mockito.InjectMocks
+import org.mockito.Mock
+import org.mockito.MockitoAnnotations
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import retrofit2.Response
+
 
 @ExperimentalCoroutinesApi
 class MovieViewModelTest {
 
     @get:Rule
-    val instantTaskExecutorRule = InstantTaskExecutorRule()
+    var rule: TestRule = InstantTaskExecutorRule()
 
-    private lateinit var movieRepository: TestingRepository
-    private lateinit var movieViewModel: TestingViewModel
-    // Use TestDispatcher for testing coroutine dispatching
-    private val testDispatcher = UnconfinedTestDispatcher()
+    @Mock
+    private lateinit var movieRepository: MovieRepository
 
-    @Before
-    fun setUp() {
-        Dispatchers.setMain(testDispatcher)  // Set test dispatcher for Dispatchers.Main
-        movieRepository = Mockito.mock(TestingRepository::class.java)
-        movieViewModel = TestingViewModel(movieRepository)
-    }
+    @InjectMocks
+    private lateinit var movieViewModel: MovieViewModel
 
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()  // Reset Dispatchers.Main after the test
-
-    }
-    @Test
-    fun `searchMovies should update LiveData with result`() = runBlockingTest {
-        // Arrange
-        val mockMovies = listOf(
-            Search("tt0372784", "https://m.media-amazon.com/images/M/MV5BOTY4YjI2N2MtYmFlMC00ZjcyLTg3YjEtMDQyM2ZjYzQ5YWFkXkEyXkFqcGdeQXVyMTQxNzMzNDI@._V1_SX300.jpg", "Batman Begins", "movie", "2005"),
-            Search("tt1877830", "https://m.media-amazon.com/images/M/MV5BOGE2NWUwMDItMjA4Yi00N2Y3LWJjMzEtMDJjZTMzZTdlZGE5XkEyXkFqcGdeQXVyODk4OTc3MTY@._V1_SX300.jpg", "The Batman", "movie", "2022")
+    private val testPagingData: PagingData<Search> = PagingData.from(
+        listOf(
+            Search("1", "Superman", "2006", "movie"),
+            Search("2", "Batman", "2008", "movie")
         )
-        val mockResponse = MovieResponse("True", mockMovies, "2")
-
-        // Wrap mockResponse in a Response object
-        val response = Response.success(mockResponse)
-
-        // Mock the repository method to return a Response<MovieResponse>
-        whenever(movieRepository.searchMovies("query", 1)).thenReturn(response)
-
-        val observer = Mockito.mock(Observer::class.java) as Observer<MovieResponse>
-        movieViewModel.movieResponse.observeForever(observer)
-
-        // Act
-        movieViewModel.searchMovies("query", 1)
-
-        // Assert
-        verify(observer).onChanged(mockResponse)
+    )
+    @Before
+    fun setup() {
+        MockitoAnnotations.initMocks(this)
     }
 
     @Test
-    fun `searchMovies should handle error`() = runBlockingTest {
-        // Arrange
-        val mockError = "Error"
-        whenever(movieRepository.searchMovies("query", 1)).thenThrow(RuntimeException(mockError))
+    fun `getMovies should return data from repository when query is provided`() = runBlockingTest {
+        val query = "superman"
+        whenever(movieRepository.getMovies(query)).thenReturn(flowOf(testPagingData))
 
-        val errorObserver = Mockito.mock(Observer::class.java) as Observer<String>
-        movieViewModel.error.observeForever(errorObserver)
+        val result: Flow<PagingData<Search>> = movieViewModel.getMovies(query)
 
-        // Act
-        movieViewModel.searchMovies("query", 1)
+        verify(movieRepository).getMovies(query)
 
-        // Assert
-        verify(errorObserver).onChanged("Exception: $mockError")
+        val resultSnapshot = result.cachedIn(movieViewModel.viewModelScope).first()
+
+        // Snapshot assertion
+        val expectedSnapshot = listOf(
+            Search("1", "Superman", "2006", "movie"),
+            Search("2", "Batman", "2008", "movie")
+        )
+
+        assertEquals(expectedSnapshot, resultSnapshot) // Convert PagingData to list and compare
     }
 
     @Test
-    fun `searchMovies should show loading state`() = runBlockingTest {
-        // Arrange
-        val movieResponse = MovieResponse("True", listOf(), "0")
+    fun `getMovies should return data from repository with default search term when no query is provided`() = runBlockingTest {
+        whenever(movieRepository.getMovies("batman")).thenReturn(flowOf(testPagingData))
 
-        // Return a Response<MovieResponse> instead of MovieResponse
-        val response = Response.success(movieResponse)
+        val result: Flow<PagingData<Search>> = movieViewModel.getMovies()
 
-        whenever(movieRepository.searchMovies("query", 1)).thenReturn(response)
+        verify(movieRepository).getMovies("batman")
+        result.cachedIn(movieViewModel.viewModelScope)
+        // Tambahkan assertions atau verifikasi lain yang diperlukan
+    }
 
-        val loadingObserver = Mockito.mock(Observer::class.java) as Observer<Boolean>
-        movieViewModel.loading.observeForever(loadingObserver)
+    @Test
+    fun `getLocalMovies should return cached movies from repository`() = runBlockingTest {
+        whenever(movieRepository.getCachedMovies()).thenReturn(flowOf(testPagingData))
 
-        // Act
-        movieViewModel.searchMovies("query", 1)
+        val result: Flow<PagingData<Search>> = movieViewModel.getLocalMovies()
 
-        // Assert
-        verify(loadingObserver).onChanged(true)  // Check loading started
-        verify(loadingObserver).onChanged(false) // Check loading finished
+        verify(movieRepository).getCachedMovies()
+        result.cachedIn(movieViewModel.viewModelScope)
+        // Tambahkan assertions atau verifikasi lain yang diperlukan
+    }
+
+    @Test
+    fun `refreshMovies should return refreshed data from repository`() = runBlockingTest {
+        val query = "superman"
+        whenever(movieRepository.getMovies(query)).thenReturn(flowOf(testPagingData))
+
+        val result: Flow<PagingData<Search>> = movieViewModel.refreshMovies(query)
+
+        verify(movieRepository).getMovies(query)
+        result.cachedIn(movieViewModel.viewModelScope)
+        // Tambahkan assertions atau verifikasi lain yang diperlukan
+    }
+
+    @Test
+    fun `refreshMovies should use default search term when no query is provided`() = runBlockingTest {
+        whenever(movieRepository.getMovies("batman")).thenReturn(flowOf(testPagingData))
+
+        val result: Flow<PagingData<Search>> = movieViewModel.refreshMovies()
+
+        verify(movieRepository).getMovies("batman")
+        result.cachedIn(movieViewModel.viewModelScope)
+        // Tambahkan assertions atau verifikasi lain yang diperlukan
     }
 }

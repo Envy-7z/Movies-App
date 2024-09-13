@@ -19,29 +19,38 @@ class MoviePagingSource(
         val page = params.key ?: 1
 
         return try {
-            // get data from api
             val response = apiService.searchMovies(query, page)
-            val searchResults = response.body()?.search ?: emptyList()
 
-            // save result from API into room
-            if (searchResults.isNotEmpty()) {
-                val movieResponse = MovieResponse(search = searchResults)
-                movieCache.saveMovies(query, movieResponse)
-            }
+            if (response.isSuccessful) {
+                val responseBody = response.body()
 
-            LoadResult.Page(
-                data = searchResults.map {
-                    MovieEntity(
-                        imdbID = it?.imdbID ?: "",
-                        title = it?.title ?: "",
-                        year = it?.year ?: "",
-                        type = it?.type ?: "",
-                        poster = it?.poster ?: ""
+                if (responseBody?.response == "False") {
+                    LoadResult.Error(IOException(responseBody.error ?: "Unknown error"))
+                } else {
+                    val searchResults = responseBody?.search ?: emptyList()
+
+                    if (searchResults.isNotEmpty()) {
+                        val movieResponse = MovieResponse(search = searchResults)
+                        movieCache.saveMovies(query, movieResponse)
+                    }
+
+                    LoadResult.Page(
+                        data = searchResults.map {
+                            MovieEntity(
+                                imdbID = it?.imdbID ?: "",
+                                title = it?.title ?: "",
+                                year = it?.year ?: "",
+                                type = it?.type ?: "",
+                                poster = it?.poster ?: ""
+                            )
+                        },
+                        prevKey = if (page == 1) null else page - 1,
+                        nextKey = if (searchResults.isEmpty()) null else page + 1
                     )
-                },
-                prevKey = if (page == 1) null else page - 1,
-                nextKey = if (searchResults.isEmpty()) null else page + 1
-            )
+                }
+            } else {
+                LoadResult.Error(IOException("HTTP error ${response.code()}"))
+            }
         } catch (e: IOException) {
             LoadResult.Error(e)
         } catch (e: HttpException) {
@@ -56,4 +65,3 @@ class MoviePagingSource(
         }
     }
 }
-

@@ -68,6 +68,11 @@ dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:1.8.22")
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
     testImplementation("androidx.paging:paging-common-ktx:3.2.2")
+    // Mockito core
+    testImplementation("org.mockito:mockito-core:5.6.0")
+
+    // Mockito Kotlin
+//    testImplementation("com.nhaarman.mockitokotlin2:mockito-kotlin:3.2.0")
     // Android Testing
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test:runner:1.6.2")
@@ -78,6 +83,7 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-contrib:3.6.1")
     androidTestImplementation("androidx.test.espresso:espresso-idling-resource:3.6.1")
     androidTestImplementation("androidx.test.ext:junit-ktx:1.2.1")
+
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0")

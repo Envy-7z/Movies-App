@@ -82,10 +82,21 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
     private fun observeLocalMovies() {
         lifecycleScope.launch {
             viewModel.getLocalMovies().collectLatest { pagingData ->
-                // If there is no active search and local data is available, display local data
-                if (!isSearching && adapter.itemCount == 0) {
-                    adapter.submitData(pagingData)
-                    binding.tvLoadState.goGone() // Hide the offline message if local data is present
+                // Submit data to the adapter
+                adapter.submitData(pagingData)
+
+                // Check network availability and data state
+                if (!isNetworkAvailable(this@MainActivity)) {
+                    // Handle offline scenarios
+                    if (adapter.itemCount == 0 && !isSearching) {
+                        showOfflineMessage()
+                    } else if (adapter.itemCount > 0) {
+                        // Hide offline message and show local data
+                        binding.tvLoadState.goGone()
+                    }
+                } else {
+                    // Network is available
+                    binding.tvLoadState.goGone()
                 }
 
                 Log.d("MainActivity", "Local movies data received: $pagingData")
@@ -102,34 +113,36 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
                 binding.shimmerContainer.startShimmer()
                 binding.shimmerContainer.goVisible()
                 binding.rvAllMovies.goGone()
-            } else if (isNotLoading) {
-                lifecycleScope.launch {
-                    binding.shimmerContainer.stopShimmer()
-                    binding.shimmerContainer.goGone()
+            } else {
+                // Stop shimmer effect
+                binding.shimmerContainer.stopShimmer()
+                binding.shimmerContainer.goGone()
+
+                if (isNotLoading) {
+                    // Show content when not loading
                     binding.rvAllMovies.goVisible()
                     binding.swipeRefresh.isRefreshing = false
                 }
-            }
 
-            // Show error message if loading failed
-            if (isError) {
-                binding.tvLoadState.isVisible = true
-                binding.tvLoadState.text = getString(R.string.label_empty_data)
-                binding.rvAllMovies.goGone()
-                binding.swipeRefresh.isRefreshing = false
-            } else {
-                binding.tvLoadState.isVisible = false
-            }
-
-            // If data is empty, show "No Data" message
-            if (isNotLoading && adapter.itemCount == 0) {
-                binding.tvLoadState.isVisible = true
-                binding.tvLoadState.text = getString(R.string.label_empty_data)
-                binding.rvAllMovies.goGone()
+                // Show error message if loading failed
+                if (isError) {
+                    binding.tvLoadState.isVisible = true
+                    binding.tvLoadState.text = getString(R.string.label_error_data)
+                    binding.rvAllMovies.goGone()
+                    binding.swipeRefresh.isRefreshing = false
+                } else {
+                    // Show empty data message if there's no data
+                    if (adapter.itemCount == 0) {
+                        binding.tvLoadState.isVisible = true
+                        binding.tvLoadState.text = getString(R.string.label_empty_data)
+                        binding.rvAllMovies.goGone()
+                    } else {
+                        binding.tvLoadState.isVisible = false
+                    }
+                }
             }
         }
     }
-
     private fun fetchDefaultMovies() {
         doSearch()
     }

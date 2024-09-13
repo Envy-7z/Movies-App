@@ -19,7 +19,10 @@ data class MovieResponse(
     var search: List<Search?>? = null,
     @SerializedName("totalResults")
     @Expose
-    var totalResults: String? = null
+    var totalResults: String? = null,
+    @SerializedName("Error")
+    @Expose
+    var error: String? = null
 ) : Parcelable
 
 @Parcelize
