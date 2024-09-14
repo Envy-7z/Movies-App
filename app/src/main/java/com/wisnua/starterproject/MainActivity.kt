@@ -51,19 +51,20 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
             fetchDefaultMovies() // Start with default search
         }
     }
+
     override fun onRefresh() {
         lifecycleScope.launch {
             if (isNetworkAvailable(this@MainActivity)) {
-                // If there is internet, refresh from the API
+                // If there's internet, refresh data from API
                 viewModel.refreshMovies().collectLatest { pagingData ->
                     adapter.submitData(pagingData)
                 }
             } else {
-                // If there is no internet, check if there is local data
+                // If there's no internet, check for local data
                 if (adapter.itemCount == 0) {
                     showOfflineMessage()
                 } else {
-                    // Show local data if available
+                    // Display local data if available
                     viewModel.getLocalMovies().collectLatest { pagingData ->
                         adapter.submitData(pagingData)
                     }
@@ -82,12 +83,12 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
     private fun observeLocalMovies() {
         lifecycleScope.launch {
             viewModel.getLocalMovies().collectLatest { pagingData ->
-                // Cek apakah sedang melakukan pencarian
+                // Check if a search is ongoing
                 if (!isSearching) {
                     adapter.submitData(pagingData)
                 }
 
-                // Logika sebelumnya tetap ada, untuk handle offline state
+                // Previous logic remains, to handle offline state
                 if (!isNetworkAvailable(this@MainActivity)) {
                     if (adapter.itemCount == 0 && !isSearching) {
                         showOfflineMessage()
@@ -103,7 +104,7 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
         }
 
         adapter.addLoadStateListener { loadState ->
-            // Sama seperti sebelumnya
+            // Same as before
             val isLoading = loadState.source.refresh is LoadState.Loading
             val isNotLoading = loadState.source.refresh is LoadState.NotLoading
             val isError = loadState.source.refresh is LoadState.Error
@@ -153,25 +154,25 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
                     searchText = query?.toString() ?: ""
                     changeIconEtSearch()
                     isSearching = searchText.isNotEmpty()
-                    doSearch() // Lakukan pencarian berdasarkan query
+                    doSearch() // Perform search based on query
                 }
         }
 
-        // Handle ketika user tekan tombol search di keyboard
+        // Handle when the user presses the search button on the keyboard
         binding.etSearch.onSearch {
             hideKeyboard()
             searchText = binding.etSearch.text.toString().ifEmpty { "" }
             isSearching = searchText.isNotEmpty()
-            doSearch() // Lakukan pencarian
+            doSearch() // Perform the search
         }
 
         // Handle clear search
         binding.etSearch.onClickIconRightEditText {
             if (searchText.isNotEmpty()) {
                 searchText = ""
-                binding.etSearch.setText("") // Hapus teks
+                binding.etSearch.setText("") // Clear text
                 isSearching = false
-                doSearch() // Kosongkan hasil pencarian
+                doSearch() // Clear search results
             }
         }
     }
@@ -198,7 +199,7 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
             binding.shimmerContainer.goVisible()
             binding.rvAllMovies.goGone()
 
-            adapter.submitData(PagingData.empty()) // Kosongkan adapter saat pencarian baru
+            adapter.submitData(PagingData.empty()) // Clear adapter when a new search is initiated
 
             viewModel.getMovies(searchText.ifEmpty { "batman" }).collectLatest { pagingData ->
                 Log.d("MainActivity", "New paging data received: $pagingData")
@@ -206,7 +207,7 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
                 binding.shimmerContainer.goGone()
                 adapter.submitData(pagingData)
 
-                // Tampilkan hasil pencarian
+                // Display search results
                 binding.rvAllMovies.goVisible()
             }
         }
@@ -219,5 +220,4 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
         binding.shimmerContainer.goGone()
         binding.swipeRefresh.isRefreshing = false
     }
-
 }
