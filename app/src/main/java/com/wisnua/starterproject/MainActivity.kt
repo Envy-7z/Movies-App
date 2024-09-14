@@ -82,20 +82,19 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
     private fun observeLocalMovies() {
         lifecycleScope.launch {
             viewModel.getLocalMovies().collectLatest { pagingData ->
-                // Submit data to the adapter
-                adapter.submitData(pagingData)
+                // Cek apakah sedang melakukan pencarian
+                if (!isSearching) {
+                    adapter.submitData(pagingData)
+                }
 
-                // Check network availability and data state
+                // Logika sebelumnya tetap ada, untuk handle offline state
                 if (!isNetworkAvailable(this@MainActivity)) {
-                    // Handle offline scenarios
                     if (adapter.itemCount == 0 && !isSearching) {
                         showOfflineMessage()
                     } else if (adapter.itemCount > 0) {
-                        // Hide offline message and show local data
                         binding.tvLoadState.goGone()
                     }
                 } else {
-                    // Network is available
                     binding.tvLoadState.goGone()
                 }
 
@@ -104,34 +103,30 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
         }
 
         adapter.addLoadStateListener { loadState ->
+            // Sama seperti sebelumnya
             val isLoading = loadState.source.refresh is LoadState.Loading
             val isNotLoading = loadState.source.refresh is LoadState.NotLoading
             val isError = loadState.source.refresh is LoadState.Error
 
             if (isLoading) {
-                // Start shimmer effect
                 binding.shimmerContainer.startShimmer()
                 binding.shimmerContainer.goVisible()
                 binding.rvAllMovies.goGone()
             } else {
-                // Stop shimmer effect
                 binding.shimmerContainer.stopShimmer()
                 binding.shimmerContainer.goGone()
 
                 if (isNotLoading) {
-                    // Show content when not loading
                     binding.rvAllMovies.goVisible()
                     binding.swipeRefresh.isRefreshing = false
                 }
 
-                // Show error message if loading failed
                 if (isError) {
                     binding.tvLoadState.isVisible = true
                     binding.tvLoadState.text = getString(R.string.label_error_data)
                     binding.rvAllMovies.goGone()
                     binding.swipeRefresh.isRefreshing = false
                 } else {
-                    // Show empty data message if there's no data
                     if (adapter.itemCount == 0) {
                         binding.tvLoadState.isVisible = true
                         binding.tvLoadState.text = getString(R.string.label_empty_data)
@@ -143,6 +138,7 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
             }
         }
     }
+
     private fun fetchDefaultMovies() {
         doSearch()
     }
@@ -152,30 +148,30 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
 
         lifecycleScope.launch {
             binding.etSearch.textChanges()
-                .debounce(1000L) // Debounce for 1 second
+                .debounce(1000L)
                 .collectLatest { query ->
                     searchText = query?.toString() ?: ""
-                    changeIconEtSearch() // Update search icon
-                    isSearching = searchText.isNotEmpty() // Set searching mode
-                    doSearch() // Trigger search
+                    changeIconEtSearch()
+                    isSearching = searchText.isNotEmpty()
+                    doSearch() // Lakukan pencarian berdasarkan query
                 }
         }
 
-        // Handle search button click (keyboard search action)
+        // Handle ketika user tekan tombol search di keyboard
         binding.etSearch.onSearch {
             hideKeyboard()
             searchText = binding.etSearch.text.toString().ifEmpty { "" }
-            isSearching = searchText.isNotEmpty() // Set searching mode
-            doSearch() // Trigger search on enter
+            isSearching = searchText.isNotEmpty()
+            doSearch() // Lakukan pencarian
         }
 
-        // Handle clear search action
+        // Handle clear search
         binding.etSearch.onClickIconRightEditText {
             if (searchText.isNotEmpty()) {
                 searchText = ""
-                binding.etSearch.setText("") // Clear text
-                isSearching = false // Reset searching mode
-                doSearch() // Clear search results
+                binding.etSearch.setText("") // Hapus teks
+                isSearching = false
+                doSearch() // Kosongkan hasil pencarian
             }
         }
     }
@@ -202,12 +198,16 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
             binding.shimmerContainer.goVisible()
             binding.rvAllMovies.goGone()
 
-            adapter.submitData(PagingData.empty())
-
+            adapter.submitData(PagingData.empty()) // Kosongkan adapter saat pencarian baru
 
             viewModel.getMovies(searchText.ifEmpty { "batman" }).collectLatest { pagingData ->
                 Log.d("MainActivity", "New paging data received: $pagingData")
+                binding.shimmerContainer.stopShimmer()
+                binding.shimmerContainer.goGone()
                 adapter.submitData(pagingData)
+
+                // Tampilkan hasil pencarian
+                binding.rvAllMovies.goVisible()
             }
         }
     }
